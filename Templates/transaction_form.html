@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>{{ 'Editar' if edit else 'Nova' }} Transação</h2>
+  <form method="post">
+    {{ form.hidden_tag() }}
+    <label>Tipo {{ form.type }}</label>
+    <label>Valor {{ form.amount }}</label>
+    <label>Data {{ form.date }}</label>
+    <label>Categoria {{ form.category }}</label>
+    <label>Descrição {{ form.description }}</label>
+    <label>Método de pagamento {{ form.payment_method }}</label>
+    <button type="submit">Salvar</button>
+  </form>
+{% endblock %}

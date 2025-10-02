@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Categorias</h2>
+  <table>
+    <thead><tr><th>Nome</th><th>Tipo</th><th>Cor</th></tr></thead>
+    <tbody>
+      {% for c in categories %}
+        <tr><td>{{ c.name }}</td><td>{{ c.type }}</td><td style="color:{{ c.color or '#000' }}">{{ c.color or '' }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Nova Categoria</h3>
+  <form method="post">
+    {{ form.hidden_tag() }}
+    <label>Nome {{ form.name }}</label>
+    <label>Tipo {{ form.type }}</label>
+    <label>Cor {{ form.color }}</label>
+    <button type="submit">Criar</button>
+  </form>
+{% endblock %}
