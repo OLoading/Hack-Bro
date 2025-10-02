@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
+
+<!-- ALERTA DE FLASH MESSAGE -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 <h2 class="mb-4">Transações</h2>
 
 <table class="table table-striped table-hover">
@@ -58,4 +71,9 @@
   <a href="{{ url_for('export_summary_csv') }}" class="btn btn-outline-info">Resumo CSV por Categoria</a>
   <a href="{{ url_for('export_summary_excel') }}" class="btn btn-outline-warning">Resumo Excel por Categoria</a>
 </div>
+
+<form action="{{ url_for('reset_data') }}" method="post" onsubmit="return confirm('Tem certeza que deseja apagar tudo?');">
+  <button type="submit" class="btn btn-danger mt-3">Resetar Tudo</button>
+</form>
+
 {% endblock %}

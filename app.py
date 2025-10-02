@@ -269,6 +269,28 @@ def create_app():
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
+    @app.route('/reset', methods=['POST'])
+    def reset_data():
+        # Apaga todas as transações e categorias
+        Transaction.query.delete()
+        Category.query.delete()
+        db.session.commit()
+
+        # Recria categorias padrão
+        defaults = [
+            ('Salário','income','#16a34a'),
+            ('Presente','income','#059669'),
+            ('Alimentação','expense','#ef4444'),
+            ('Transporte','expense','#f97316'),
+            ('Lazer','expense','#8b5cf6'),
+        ]
+        for name, typ, color in defaults:
+            db.session.add(Category(name=name, type=typ, color=color))
+        db.session.commit()
+
+        flash('Todos os dados foram apagados e categorias recriadas.', 'warning')
+        return redirect(url_for('index'))
+
     return app
 
 
