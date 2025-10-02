@@ -4,21 +4,26 @@ from datetime import datetime
 db = SQLAlchemy()
 
 class Category(db.Model):
-    __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
-    type = db.Column(db.String(10), nullable=False)  # 'income' or 'expense'
-    color = db.Column(db.String(7), nullable=True)
+    name = db.Column(db.String(50), nullable=False)
+    type = db.Column(db.String(10), nullable=False)  # income/expense
+    color = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    transactions = db.relationship('Transaction', backref='category', lazy=True)
+    def __repr__(self):
+        return f"<Category {self.id} - {self.name} ({self.type})>"
 
 class Transaction(db.Model):
-    __tablename__ = 'transactions'
     id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
-    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    type = db.Column(db.String(10), nullable=False)  # income/expense
+    amount = db.Column(db.Numeric(10,2), nullable=False)
     date = db.Column(db.Date, nullable=False)
     description = db.Column(db.String(200))
     payment_method = db.Column(db.String(50))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    category = db.relationship('Category', backref=db.backref('transactions', lazy=True))
+
+    def __repr__(self):
+        return f"<Transaction {self.id} - {self.description} R${self.amount}>"

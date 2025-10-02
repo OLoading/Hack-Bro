@@ -1,10 +1,13 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, Response, send_file
 from config import Config
 from models import db, Category, Transaction
 from forms import TransactionForm, CategoryForm
 from datetime import date
 from decimal import Decimal
 import os
+import csv
+import pandas as pd
+from io import StringIO, BytesIO
 
 def create_app():
     app = Flask(__name__)
@@ -114,6 +117,10 @@ def create_app():
         flash('Transação removida', 'info')
         return redirect(url_for('index'))
 
+    # -------------------------------
+    # CRUD de Categorias
+    # -------------------------------
+
     @app.route('/categories', methods=['GET','POST'])
     def categories_view():
         form = CategoryForm()
@@ -126,7 +133,144 @@ def create_app():
         categories = Category.query.order_by(Category.type).all()
         return render_template('categories.html', categories=categories, form=form)
 
+    @app.route('/categories/<int:id>/edit', methods=['GET','POST'])
+    def edit_category(id):
+        c = Category.query.get_or_404(id)
+        form = CategoryForm(obj=c)
+        if form.validate_on_submit():
+            c.name = form.name.data
+            c.type = form.type.data
+            c.color = form.color.data
+            db.session.commit()
+            flash('Categoria atualizada', 'success')
+            return redirect(url_for('categories_view'))
+        categories = Category.query.order_by(Category.type).all()
+        return render_template('categories.html', categories=categories, form=form, edit_id=c.id)
+
+    @app.route('/categories/<int:id>/delete', methods=['POST'])
+    def delete_category(id):
+        c = Category.query.get_or_404(id)
+        db.session.delete(c)
+        db.session.commit()
+        flash('Categoria removida', 'info')
+        return redirect(url_for('categories_view'))
+    
+        # -------------------------------
+    # Exportação CSV e Excel (detalhado)
+    # -------------------------------
+
+    @app.route('/export/csv')
+    def export_csv():
+        transactions = Transaction.query.order_by(Transaction.date.desc()).all()
+
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Data', 'Descrição', 'Categoria', 'Tipo', 'Valor', 'Método'])
+        for t in transactions:
+            writer.writerow([
+                t.date.strftime('%d/%m/%Y'),
+                t.description,
+                t.category.name if t.category else '',
+                t.category.type if t.category else '',
+                str(t.amount),
+                t.payment_method
+            ])
+
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment;filename=relatorio.csv"}
+        )
+
+    @app.route('/export/excel')
+    def export_excel():
+        transactions = Transaction.query.order_by(Transaction.date.desc()).all()
+
+        data = []
+        for t in transactions:
+            data.append({
+                'Data': t.date.strftime('%d/%m/%Y'),
+                'Descrição': t.description,
+                'Categoria': t.category.name if t.category else '',
+                'Tipo': t.category.type if t.category else '',
+                'Valor': float(t.amount),
+                'Método': t.payment_method
+            })
+
+        df = pd.DataFrame(data)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name="Transações")
+
+        output.seek(0)
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name="relatorio.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    # -------------------------------
+    # Exportação Resumida por Categoria
+    # -------------------------------
+
+    @app.route('/export/summary/csv')
+    def export_summary_csv():
+        summary = (
+            db.session.query(Category.name, Category.type, db.func.sum(Transaction.amount))
+            .join(Transaction, Transaction.category_id == Category.id)
+            .group_by(Category.id)
+            .all()
+        )
+
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Categoria', 'Tipo', 'Total'])
+        for name, typ, total in summary:
+            writer.writerow([name, typ, float(total or 0)])
+
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment;filename=resumo_categorias.csv"}
+        )
+
+    @app.route('/export/summary/excel')
+    def export_summary_excel():
+        summary = (
+            db.session.query(Category.name, Category.type, db.func.sum(Transaction.amount))
+            .join(Transaction, Transaction.category_id == Category.id)
+                       .group_by(Category.id)
+            .all()
+        )
+
+        data = []
+        for name, typ, total in summary:
+            data.append({
+                'Categoria': name,
+                'Tipo': typ,
+                'Total': float(total or 0)
+            })
+
+        df = pd.DataFrame(data)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name="Resumo por Categoria")
+
+        output.seek(0)
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name="resumo_categorias.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
     return app
+
 
 if __name__ == '__main__':
     app = create_app()
