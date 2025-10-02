@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from decimal import Decimal
 
 db = SQLAlchemy()
 

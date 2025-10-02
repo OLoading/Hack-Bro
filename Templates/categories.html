@@ -13,9 +13,9 @@
   <h3>Nova Categoria</h3>
   <form method="post">
     {{ form.hidden_tag() }}
-    <label>Nome {{ form.name }}</label>
-    <label>Tipo {{ form.type }}</label>
-    <label>Cor {{ form.color }}</label>
-    <button type="submit">Criar</button>
+    <div class="field"><label>Nome {{ form.name }}</label></div>
+    <div class="field"><label>Tipo {{ form.type }}</label></div>
+    <div class="field"><label>Cor {{ form.color }}</label></div>
+    <div class="actions"><button type="submit">Criar</button></div>
   </form>
 {% endblock %}

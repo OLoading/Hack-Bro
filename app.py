@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 from config import Config
 from models import db, Category, Transaction
 from forms import TransactionForm, CategoryForm
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 import os
 
@@ -65,15 +65,12 @@ def create_app():
     @app.route('/transaction/new', methods=['GET','POST'])
     def new_transaction():
         form = TransactionForm()
-        # populate categories by type
-        cats = Category.query.filter_by(type=form.type.data or 'expense').all()
-        # default populate: all categories
         form.category.choices = [(c.id, f"{c.name} [{c.type}]") for c in Category.query.all()]
 
         if form.validate_on_submit():
             t = Transaction(
                 category_id=form.category.data,
-                amount=Decimal(form.amount.data),
+                amount=Decimal(str(form.amount.data)),
                 date=form.date.data,
                 description=form.description.data,
                 payment_method=form.payment_method.data
@@ -87,8 +84,9 @@ def create_app():
     @app.route('/transaction/<int:id>/edit', methods=['GET','POST'])
     def edit_transaction(id):
         t = Transaction.query.get_or_404(id)
-        form = TransactionForm(obj=t)
+        form = TransactionForm()
         form.category.choices = [(c.id, f"{c.name} [{c.type}]") for c in Category.query.all()]
+
         if request.method == 'GET':
             form.amount.data = float(t.amount)
             form.date.data = t.date
@@ -98,7 +96,7 @@ def create_app():
             form.payment_method.data = t.payment_method
 
         if form.validate_on_submit():
-            t.amount = Decimal(form.amount.data)
+            t.amount = Decimal(str(form.amount.data))
             t.date = form.date.data
             t.category_id = form.category.data
             t.description = form.description.data

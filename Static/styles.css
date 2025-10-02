@@ -13,3 +13,5 @@ th,td{padding:0.5rem;border-bottom:1px solid #e5e7eb;text-align:left}
 .flashes{list-style:none;padding:0}
 .flash-success{color:green}
 .flash-info{color:blue}
+.field{margin-bottom:0.5rem}
+.actions{margin-top:0.5rem}
