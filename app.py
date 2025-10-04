@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, request, flash, Res
 from config import Config
 from models import db, Category, Transaction
 from forms import TransactionForm, CategoryForm
-from datetime import date
+from datetime import datetime, date
 from decimal import Decimal
 import os
 import csv
@@ -30,8 +30,11 @@ def create_app():
                 db.session.add(Category(name=name, type=typ, color=color))
             db.session.commit()
 
+    # -------------------------------
+    
     @app.route('/')
     def index():
+    # filtros opcionais
         start = request.args.get('start')
         end = request.args.get('end')
         cat = request.args.get('category', type=int)
@@ -45,25 +48,48 @@ def create_app():
             q = q.filter(Transaction.category_id == cat)
 
         transactions = q.all()
-        # resumo do mês atual por padrão
+
+    # filtro por mês/ano
         month = request.args.get('month')
-        if not month:
-            month = date.today().strftime('%Y-%m')
-        year, month_num = map(int, month.split('-'))
+        year = request.args.get('year')
+
+        if not month or not year:
+            today = date.today()
+            month_num = today.month
+            year = today.year
+        else:
+                month_num = int(month)
+        year = int(year)
+
         from_date = date(year, month_num, 1)
         if month_num == 12:
-            to_date = date(year+1, 1, 1)
+            to_date = date(year + 1, 1, 1)
         else:
-            to_date = date(year, month_num+1, 1)
+            to_date = date(year, month_num + 1, 1)
 
-        summary_q = Transaction.query.filter(Transaction.date >= from_date).filter(Transaction.date < to_date)
-        total_income = sum([t.amount for t in summary_q.join(Category).filter(Category.type=='income').all()]) or Decimal('0.00')
-        total_expense = sum([t.amount for t in summary_q.join(Category).filter(Category.type=='expense').all()]) or Decimal('0.00')
+        summary_q = Transaction.query.filter(
+            Transaction.date >= from_date,
+            Transaction.date < to_date
+    )
+
+        total_income = sum([t.amount for t in summary_q.join(Category).filter(Category.type == 'income').all()]) or Decimal('0.00')
+        total_expense = sum([t.amount for t in summary_q.join(Category).filter(Category.type == 'expense').all()]) or Decimal('0.00')
         balance = total_income - total_expense
 
         categories = Category.query.all()
-        return render_template('index.html', transactions=transactions, categories=categories,
-                               total_income=total_income, total_expense=total_expense, balance=balance, month=month)
+
+    # 🔹 IMPORTANTE: esse return precisa estar alinhado com o def
+        return render_template(
+            'index.html',
+            transactions=transactions,
+            categories=categories,
+            total_income=total_income,
+            total_expense=total_expense,
+            balance=balance,
+            month=f"{year}-{month_num:02d}",
+            current_month=date.today().month,
+            current_year=date.today().year
+        )
 
     @app.route('/transaction/new', methods=['GET','POST'])
     def new_transaction():
@@ -93,7 +119,6 @@ def create_app():
         if request.method == 'GET':
             form.amount.data = float(t.amount)
             form.date.data = t.date
-            form.type.data = t.category.type if t.category else 'expense'
             form.category.data = t.category_id
             form.description.data = t.description
             form.payment_method.data = t.payment_method

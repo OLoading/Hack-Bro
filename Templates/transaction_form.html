@@ -1,14 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-  <h2>{{ 'Editar' if edit else 'Nova' }} Transação</h2>
-  <form method="post">
-    {{ form.hidden_tag() }}
-    <div class="field"><label>Tipo {{ form.type }}</label></div>
-    <div class="field"><label>Valor {{ form.amount }}</label></div>
-    <div class="field"><label>Data {{ form.date }}</label></div>
-    <div class="field"><label>Categoria {{ form.category }}</label></div>
-    <div class="field"><label>Descrição {{ form.description }}</label></div>
-    <div class="field"><label>Método de pagamento {{ form.payment_method }}</label></div>
-    <div class="actions"><button type="submit">Salvar</button></div>
-  </form>
+
+<h2 class="mb-4">Editar Transação</h2>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  <div class="mb-3">
+    {{ form.amount.label(class="form-label") }}
+    {{ form.amount(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.date.label(class="form-label") }}
+    {{ form.date(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.category.label(class="form-label") }}
+    {{ form.category(class="form-select") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.payment_method.label(class="form-label") }}
+    {{ form.payment_method(class="form-select") }}
+  </div>
+
+  <div class="mt-4">
+    {{ form.submit(class="btn btn-success") }}
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</form>
+
 {% endblock %}
